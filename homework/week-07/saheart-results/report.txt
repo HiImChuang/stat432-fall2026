@@ -1,0 +1,59 @@
+SAheart: LDA/QDA prediction analysis
+
+DATA AND PROCEDURE
+- Variables: sbp, typea, age: integer; tobacco, ldl, adiposity, obesity,
+  alcohol: numeric; famhist: character (categorical); chd (outcome): integer.
+- Missing value: no
+- Recoding: famhist Absent=1, Present=2; chd factor levels 0,1 (positive=1).
+- CV: seed 43207; stratified training 369 (241/128), test 93 (61/32).
+  Shared stratified 10-fold CV. Each iteration fits preprocessing/model on
+  nine folds and calculates held-out accuracy, error, and a confusion matrix.
+  Variance selection and centered/unit-scaled PCA are fitted within each
+  training fold; priors use fitting-sample class frequencies. Select lowest
+  mean fold error; ties favor fewer dimensions, then LDA.
+- Compared models: traditional LDA/QDA with all nine predictors, LDA/QDA
+  with five highest raw-variance predictors, and LDA/QDA with 2,4,6 leading
+  standardized PCs (ten candidates). No rows removed or values imputed.
+
+RESULTS
+Mean CV accuracy (%); confusion cells are mean fold counts (SE), positive=1.
+Model             Acc.  TN (SE)       FP (SE)       FN (SE)       TP (SE)      
+LDA_all          69.40  19.70 (0.72)  4.40 (0.73)   6.90 (0.53)   5.90 (0.53)  
+QDA_all          68.57  18.80 (0.65)  5.30 (0.67)   6.30 (0.58)   6.50 (0.58)  
+LDA_variance5    64.21  19.30 (1.01)  4.80 (0.96)   8.40 (0.83)   4.40 (0.81)  
+QDA_variance5    67.49  19.30 (0.72)  4.80 (0.71)   7.20 (0.51)   5.60 (0.45)  
+LDA_pca2         66.36  20.30 (0.76)  3.80 (0.73)   8.60 (0.67)   4.20 (0.68)  
+QDA_pca2         68.30  20.80 (0.90)  3.30 (0.92)   8.40 (0.43)   4.40 (0.34)  
+LDA_pca4         72.12  20.50 (0.58)  3.60 (0.62)   6.70 (0.62)   6.10 (0.62)  
+QDA_pca4         71.01  19.90 (0.78)  4.20 (0.81)   6.50 (0.56)   6.30 (0.56)  
+LDA_pca6         70.22  20.10 (0.72)  4.00 (0.73)   7.00 (0.63)   5.80 (0.61)  
+QDA_pca6         71.55  19.80 (0.65)  4.30 (0.67)   6.20 (0.68)   6.60 (0.70)  
+TN/FP/FN/TP = actual/predicted 0/0, 0/1, 1/0, 1/1. Fold counts average
+36.9 observations; SE = SD of fold counts / sqrt(10). These are descriptive
+SEs, not independent-sample confidence intervals: training folds overlap
+and held-out fold sizes/class composition vary. All fits succeeded.
+
+SELECTED MODEL AND ESTIMATED PREDICTION ERROR
+1. Chosen model: LDA with four standardized principal components.
+2. Refitting and application: after locking selection, centered/unit-scaled
+   PCA and LDA were refitted on the whole training set (369 observations).
+   The four PCs explain 67.6% of training predictor variance. This refitted
+   pipeline was applied once to the reserved testing set (93 observations).
+3. Testing performance: error = 20/93 = 21.51%; accuracy = 73/93 = 78.49%.
+4. Testing confusion counts (negative=0, positive=1), in TN, FP, FN, TP order:
+   TN=56, FP=5, FN=15, TP=17.
+   Type I (false positive): FP/(TN+FP) = 5/61 = 8.20%.
+   Type II (false negative): FN/(FN+TP) = 15/32 = 46.88%.
+
+MAIN FINDINGS AND LIMITATIONS
+Four-PC LDA improves mean CV error over ordinary LDA (30.60%) and QDA
+(31.43%); its lead over six-PC QDA (28.45%) is small, not proof of superiority.
+Raw-variance subsets performed worse and their rankings depend on units.
+The selected classifier misses 15/32 positive test cases (46.88%). Class
+imbalance, only 93 test observations, CV selection optimism, and Gaussian
+assumptions for skewed/binary predictors limit conclusions. This rerun reuses
+the previously evaluated split: it is not new independent validation.
+Independence is assumed; performance in other populations may differ.
+
+Explicit skill: $lda-qda-analysis. Code: saheart-analysis.R. Fold outputs,
+preprocessing audit, split and test predictions: saheart-results/.
